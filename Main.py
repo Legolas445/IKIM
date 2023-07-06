@@ -108,29 +108,39 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        if (i + 1) % 10 == 0:
-            print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(epoch + 1, num_epochs, i + 1, len(dataloader),
-                                                                     loss.item()))
+        #Save the Model
+        if epoch % 5 == 0:
+            torch.save(model, os.path.join('/Users/johannesesch/Documents/Beruf/IKIM Challange/coding_challenge_mml/Model_save/', 'epoch-{}.pt'.format(epoch)))
+
 
 # Test the model
 
-# Path to Test image
+# Path to Test image and model
 test_image_path = '/Users/johannesesch/Documents/Beruf/IKIM Challange/coding_challenge_mml/data/images/1_liver7.nrrd'
 test_mask_path = '/Users/johannesesch/Documents/Beruf/IKIM Challange/coding_challenge_mml/data/masks/1_liver7.nrrd'
 
-#Load Test image
-test_image_data = load_nrrd(test_image_path)
-test_mask_data = load_nrrd(test_mask_path)
+model_path = '/Users/johannesesch/Documents/Beruf/IKIM Challange/coding_challenge_mml/Model_save/epoch-95.pt'
 
-test_input = torch.from_numpy(test_image_data.flatten()).float().unsqueeze(0)
+def Test_model(test_image_path, test_mask_path, model_path ):
+    #Load model
+    test_model = torch.load(model_path)
+    test_model.eval()
 
-with torch.no_grad():
-    model.eval()
-    output = model(test_input)
-    _, predicted_class = torch.max(output, 1)
+    # Load Test image
+    test_image_data = load_nrrd(test_image_path)
+    test_mask_data = load_nrrd(test_mask_path)
 
-#prediction for test image
-predicted_label = {0: 'bone',  1: 'kidney', 2: 'liver',  3: 'muscle',  4: 'spleen'}
-predicted_organ = predicted_label[predicted_class.item()]
+    test_input = torch.from_numpy(test_image_data.flatten()).float().unsqueeze(0)
 
-print('Predicted organ: ', predicted_organ)
+    with torch.no_grad():
+        test_model.eval()
+        output = test_model(test_input)
+        _, predicted_class = torch.max(output, 1)
+
+    # prediction for test image
+    predicted_label = {0: 'bone', 1: 'kidney', 2: 'liver', 3: 'muscle', 4: 'spleen'}
+    predicted_organ = predicted_label[predicted_class.item()]
+
+    print('Predicted organ: ', predicted_organ)
+
+Test_model(test_image_path, test_mask_path, model_path)
